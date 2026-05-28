@@ -1,4 +1,4 @@
-# AI Model Deployment Workflow for Arm Ethos-U85
+# AI Model Deployment Workflow for Arm Ethos-U85 (E8 board)
 
 ---
 
