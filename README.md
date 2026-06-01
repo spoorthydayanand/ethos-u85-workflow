@@ -277,8 +277,10 @@ print(x_train.shape)
 print(y_train.shape)
 ```
 Expected output:
+```bash
 (60000, 28, 28)
 (60000,)
+```
 
 ### Normalize the Dataset
 
@@ -290,7 +292,7 @@ x_test = x_test / 255.0
 print(x_train.min(), x_train.max())
 ```
 Expected output:
-0.0 1.0
+`0.0 1.0`
 
 ### Reshape the Dataset
 
@@ -306,8 +308,10 @@ print(x_train.shape)
 print(x_test.shape)
 ```
 Expected output:
+```bash
 (60000, 28, 28, 1)
 (10000, 28, 28, 1)
+```
 
 ---
 
@@ -776,15 +780,19 @@ Create the project structure:
 ```bash
 mkdir -p mnist_e8_project/{build,linker,bsp,executorch/include,executorch/lib}
 ```
+
 Now check:
 ```bash
 tree mnist_e8_project
 ```
+
 If `tree` is missing:
 ```bash
 sudo apt install tree
 ```
+
 Expected structure:
+```bash
 mnist_e8_project/
 ├── build
 ├── bsp
@@ -792,15 +800,18 @@ mnist_e8_project/
 │   ├── include
 │   └── lib
 └── linker
+```
 
 ### Create CMakeLists.txt
 ```bash
 cd mnist_e8_project
 ```
+
 Open nano editor:
 ```bash
 nano CMakeLists.txt
 ```
+
 Paste this:
 ```bash
 cmake_minimum_required(VERSION 3.20)
@@ -859,6 +870,7 @@ Open nano editor:
 ```bash
 nano arm-none-eabi-toolchain.cmake
 ```
+
 Paste:
 ```bash
 set(CMAKE_SYSTEM_NAME Generic)
