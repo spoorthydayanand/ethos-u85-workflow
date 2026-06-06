@@ -975,6 +975,25 @@ project/
 ```
 
 
+## Building the J9App.cpp
+
+### Understanding what J9App really does
+Internally the flow is:
+```bash
+Model (.tflite)
+      ↓
+TFLM Interpreter
+      ↓
+Tensor Arena Memory
+      ↓
+Input Tensor
+      ↓
+Invoke()
+      ↓
+Output Tensor
+      ↓
+Prediction
+```
 
 
 
