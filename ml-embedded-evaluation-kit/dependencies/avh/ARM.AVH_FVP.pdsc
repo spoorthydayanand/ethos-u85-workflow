@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<package schemaVersion="1.7.56" xmlns:xs="http://www.w3.org/2001/XMLSchema-instance" xs:noNamespaceSchemaLocation="https://raw.githubusercontent.com/Open-CMSIS-Pack/Open-CMSIS-Pack-Spec/v1.7.56/schema/PACK.xsd">
+  <name>AVH_FVP</name>
+  <vendor>ARM</vendor>
+  <description overview="Overview/README.md">Virtual Interfaces and Developer Resources for Arm FVP Simulation Models</description>
+  <url>https://github.com/ARM-software/AVH/</url>
+  <repository type="git">https://github.com/ARM-software/AVH.git</repository>
+  <license>LICENSE</license>
+
+  <releases>
+    <release version="2.2.0-dev">
+      Active development ...
+        - Add VIO driver
+        - Add vStream AudioIn/Out drivers
+        - Add vSocket driver
+    </release>
+  </releases>
+
+  <requirements>
+    <packages>
+      <package vendor="ARM" name="CMSIS" version="5.9.0-0"/>
+    </packages>
+  </requirements>
+
+  <conditions>
+    <condition id="VIO">
+      <description>Virtual I/O</description>
+      <require Cclass="Device" Cgroup="Startup"/>
+    </condition>
+    <condition id="vStream">
+      <description>Requirements for vStream components</description>
+      <require Cclass="Device" Cgroup="Startup"/>
+    </condition>
+    <condition id="VSocket">
+      <description>VSocket</description>
+      <require Cclass="Device" Cgroup="Startup"/>
+      <require Cclass="CMSIS"  Cgroup="RTOS2"/>
+    </condition>
+
+    <condition id="ARMCM_VHT">
+      <description>Requirements for MPS2 FVPs part of Cortex_DFP</description>
+      <accept Dvendor="ARM:82" Dname="ARMCM0"/>
+      <accept Dvendor="ARM:82" Dname="ARMCM0P"/>
+      <accept Dvendor="ARM:82" Dname="ARMCM3"/>
+      <accept Dvendor="ARM:82" Dname="ARMCM4"/>
+      <accept Dvendor="ARM:82" Dname="ARMCM7"/>
+      <accept Dvendor="ARM:82" Dname="ARMCM23"/>
+      <accept Dvendor="ARM:82" Dname="ARMCM33"/>
+      <accept Dvendor="ARM:82" Dname="ARMCM35P"/>
+      <accept Dvendor="ARM:82" Dname="ARMCM52"/>
+      <accept Dvendor="ARM:82" Dname="ARMCM55"/>
+      <accept Dvendor="ARM:82" Dname="ARMCM85"/>
+    </condition>
+
+    <condition id="CMSDK_VHT">
+      <description>Requirements for MPS2 FVPs part of V2M-MPS2_CMx</description>
+      <accept Dvendor="ARM:82" Dname="CMSDK_CM0_VHT"/>
+      <accept Dvendor="ARM:82" Dname="CMSDK_CM0plus_VHT"/>
+      <accept Dvendor="ARM:82" Dname="CMSDK_CM3_VHT"/>
+      <accept Dvendor="ARM:82" Dname="CMSDK_CM4_VHT"/>
+      <accept Dvendor="ARM:82" Dname="CMSDK_CM4_FP_VHT"/>
+      <accept Dvendor="ARM:82" Dname="CMSDK_CM7_VHT"/>
+      <accept Dvendor="ARM:82" Dname="CMSDK_CM7_SP_VHT"/>
+      <accept Dvendor="ARM:82" Dname="CMSDK_CM7_DP_VHT"/>
+    </condition>
+
+    <condition id="IOTKit_VHT">
+      <description>Requirements for MPS2 FVPs part of V2M-MPS2_IOTKit</description>
+      <accept Dvendor="ARM:82" Dname="IOTKit_CM23_VHT"/>
+      <accept Dvendor="ARM:82" Dname="IOTKit_CM33_VHT"/>
+      <accept Dvendor="ARM:82" Dname="IOTKit_CM33_FP_VHT"/>
+    </condition>
+
+    <condition id="Corstone-300">
+      <description>Requirements for Corstone-300 FVP</description>
+      <accept Dvendor="ARM:82" Dname="SSE-300-MPS3"/>
+      <accept Bvendor="ARM"    Bname="V2M-MPS3-SSE-300-FVP"/>
+    </condition>
+    
+    <condition id="Corstone-310">
+      <description>Requirements for Corstone-310 FVP</description>
+      <accept Dvendor="ARM:82" Dname="SSE-310-MPS3_FVP"/>
+      <accept Bvendor="ARM"    Bname="V2M-MPS3-SSE-310"/>
+    </condition>
+    
+    <condition id="Corstone-315">
+      <description>Requirements for Corstone-315 FVP</description>
+      <accept Dvendor="ARM:82" Dname="SSE-315-FVP"/>
+      <accept Bvendor="ARM"    Bname="SSE-315"/>
+    </condition>
+
+    <condition id="Corstone-320">
+      <description>Requirements for Corstone-320 FVP</description>
+      <accept Dvendor="ARM:82" Dname="SSE-320-FVP"/>
+      <accept Bvendor="ARM"    Bname="SSE-320"/>
+    </condition>
+
+    <condition id="Arm FVP">
+      <description>Collection of supported Arm FVPs</description>
+      <accept condition="ARMCM_VHT"/>
+      <accept condition="CMSDK_VHT"/>
+      <accept condition="IOTKit_VHT"/>
+      <accept condition="Corstone-300"/>
+      <accept condition="Corstone-310"/>
+      <accept condition="Corstone-315"/>
+      <accept condition="Corstone-320"/>
+    </condition>
+
+    <condition id="VIO FVP">
+      <description>Requirement for VIO Driver for FVPs</description>
+      <accept condition="Arm FVP"/>
+      <accept condition="VIO"/>
+    </condition>
+
+    <condition id="vStream FVP">
+      <description>Requirement for vStream Driver for FVPs</description>
+      <accept condition="Arm FVP"/>
+      <accept condition="vStream"/>
+    </condition>
+
+    <condition id="VSocket FVP">
+      <description>Requirement for VSocket Driver for FVPs</description>
+      <accept condition="Arm FVP"/>
+      <accept condition="VSocket"/>
+    </condition>
+  </conditions>
+
+  <components>
+    <component Cclass="CMSIS Driver" Cgroup="VIO" Csub="VIO" Cversion="2.0.0" Capiversion="1.0.0" condition="VIO FVP">
+      <description>Virtual I/O implementation for Arm FVPs</description>
+      <files>
+        <file category="doc"     name="Documentation/simulation/html/group__arm__vio.html"/>
+        <file category="sourceC" name="interface/vio/vio_fvp.c"/>
+      </files>
+    </component>
+
+   <component Cclass="CMSIS Driver" Cgroup="vStream" Csub="AudioIn" Cversion="1.0.0" Capiversion="1.0.0" condition="vStream FVP">
+      <description>Audio Input vStream implementation for Arm FVPs</description>
+      <RTE_Components_h>
+        #define RTE_VSTREAM_AUDIOIN
+      </RTE_Components_h>
+      <files>
+        <file category="doc"     name="Documentation/simulation/html/group__arm__vsi.html"/>
+        <file category="include" name="interface/include/"/>
+        <file category="sourceC" name="interface/vstream/source/vstream_audio_in.c"/>
+        <file category="header"  name="interface/vstream/source/vstream_audio_in.h"/>
+        <file category="header"  name="interface/vstream/config/vstream_audio_in_config.h" attr="config" version="1.0.0"/>
+      </files>
+    </component>
+
+   <component Cclass="CMSIS Driver" Cgroup="vStream" Csub="AudioOut" Cversion="1.0.0" Capiversion="1.0.0" condition="vStream FVP">
+      <description>Audio Output vStream implementation for Arm FVPs</description>
+      <RTE_Components_h>
+        #define RTE_VSTREAM_AUDIOOUT
+      </RTE_Components_h>
+      <files>
+        <file category="doc"     name="Documentation/simulation/html/group__arm__vsi.html"/>
+        <file category="include" name="interface/include/"/>
+        <file category="sourceC" name="interface/vstream/source/vstream_audio_out.c"/>
+        <file category="header"  name="interface/vstream/source/vstream_audio_out.h"/>
+        <file category="header"  name="interface/vstream/config/vstream_audio_out_config.h" attr="config" version="1.0.0"/>
+      </files>
+    </component>
+
+   <component Cclass="CMSIS Driver" Cgroup="vStream" Csub="VideoIn" Cversion="1.0.0" Capiversion="1.0.0" condition="vStream FVP">
+      <description>Video Input vStream implementation for Arm FVPs</description>
+      <RTE_Components_h>
+        #define RTE_VSTREAM_VIDEOIN
+      </RTE_Components_h>
+      <files>
+        <file category="doc"     name="Documentation/simulation/html/group__arm__vsi.html"/>
+        <file category="include" name="interface/include/"/>
+        <file category="sourceC" name="interface/vstream/source/vstream_video_in.c"/>
+        <file category="header"  name="interface/vstream/source/vstream_video_in.h"/>
+        <file category="header"  name="interface/vstream/config/vstream_video_in_config.h" attr="config" version="1.0.0"/>
+      </files>
+    </component>
+
+   <component Cclass="CMSIS Driver" Cgroup="vStream" Csub="VideoOut" Cversion="1.0.0" Capiversion="1.0.0" condition="vStream FVP">
+      <description>Video Output vStream implementation for Arm FVPs</description>
+      <RTE_Components_h>
+        #define RTE_VSTREAM_VIDEOOUT
+      </RTE_Components_h>
+      <files>
+        <file category="doc"     name="Documentation/simulation/html/group__arm__vsi.html"/>
+        <file category="include" name="interface/include/"/>
+        <file category="sourceC" name="interface/vstream/source/vstream_video_out.c"/>
+        <file category="header"  name="interface/vstream/source/vstream_video_out.h"/>
+        <file category="header"  name="interface/vstream/config/vstream_video_out_config.h" attr="config" version="1.0.0"/>
+      </files>
+    </component>
+
+    <component Cclass="IoT Utility" Cgroup="Socket" Csub="VSocket" Capiversion="1.2.0" Cversion="1.0.0" condition="VSocket FVP">
+      <description>IoT Socket implementation for Arm FVPs</description>
+      <RTE_Components_h>
+        #define RTE_IoT_Socket                  /* IoT Socket */
+        #define RTE_IoT_Socket_VSocket          /* IoT Socket: VSocket */
+      </RTE_Components_h>
+      <files>
+        <file category="doc"     name="Documentation/simulation/html/group__arm__vsocket.html"/>
+        <file category="sourceC" name="interface/vsocket/iot_socket.c"/>
+      </files>
+    </component>
+  </components>
+
+  <examples>
+    <example name="FVP_Hello" folder="example/FVP_Hello" doc="README.md">
+      <description>Pre-configured for FVP simulation models. Outputs "Hello World"</description>
+      <board vendor="ARM" name="V2M-MPS3-SSE-300-FVP"/>
+      <board vendor="ARM" name="V2M-MPS3-SSE-310"/>
+      <board vendor="ARM" name="SSE-315"/>
+      <board vendor="ARM" name="SSE-320"/>
+      <project>
+        <environment name="csolution" load="FVP_Hello.csolution.yml"/>
+      </project>
+    </example>
+    <example name="FVP_Hello" folder="example/FVP_Hello" doc="README.md">
+      <description>Pre-configured for FVP simulation models. Outputs "Hello World"</description>
+      <project>
+        <environment name="csolution" load="FVP_Hello.csolution.yml"/>
+      </project>
+    </example>
+
+    <example name="FVP_Audio" folder="example/FVP_Audio" doc="README.md">
+      <description>Audio Input/Output data streaming. Pre-configured for FVP simulation models.</description>
+      <board vendor="ARM" name="V2M-MPS3-SSE-300-FVP"/>
+      <board vendor="ARM" name="V2M-MPS3-SSE-310"/>
+      <board vendor="ARM" name="SSE-315"/>
+      <board vendor="ARM" name="SSE-320"/>
+      <project>
+        <environment name="csolution" load="FVP_Audio.csolution.yml"/>
+      </project>
+    </example>
+    <example name="FVP_Audio" folder="example/FVP_Audio" doc="README.md">
+      <description>Audio Input/Output data streaming. Pre-configured for FVP simulation models.</description>
+      <project>
+        <environment name="csolution" load="FVP_Audio.csolution.yml"/>
+      </project>
+    </example>
+
+    <example name="FVP_Video" folder="example/FVP_Video" doc="README.md">
+      <description>Video Input/Output data streaming. Pre-configured for FVP simulation models.</description>
+      <board vendor="ARM" name="V2M-MPS3-SSE-300-FVP"/>
+      <board vendor="ARM" name="V2M-MPS3-SSE-310"/>
+      <board vendor="ARM" name="SSE-315"/>
+      <board vendor="ARM" name="SSE-320"/>
+      <project>
+        <environment name="csolution" load="FVP_Video.csolution.yml"/>
+      </project>
+    </example>
+    <example name="FVP_Video" folder="example/FVP_Video" doc="README.md">
+      <description>Video Input/Output data streaming. Pre-configured for FVP simulation models.</description>
+      <project>
+        <environment name="csolution" load="FVP_Video.csolution.yml"/>
+      </project>
+    </example>
+  </examples>
+
+  <csolution>
+    <clayer type="Board" path="board/Corstone-300" file="Board.clayer.yml"     copy-to="board/Corstone-300" condition="Corstone-300"/>
+    <clayer type="Board" path="board/Corstone-300" file="Board-U55.clayer.yml" copy-to="board/Corstone-300" condition="Corstone-300"/>
+    <clayer type="Board" path="board/Corstone-300" file="Board-U65.clayer.yml" copy-to="board/Corstone-300" condition="Corstone-300"/>
+
+    <clayer type="Board" path="board/Corstone-310" file="Board.clayer.yml"     copy-to="board/Corstone-310" condition="Corstone-310"/>
+    <clayer type="Board" path="board/Corstone-310" file="Board-U55.clayer.yml" copy-to="board/Corstone-310" condition="Corstone-310"/>
+    <clayer type="Board" path="board/Corstone-310" file="Board-U65.clayer.yml" copy-to="board/Corstone-310" condition="Corstone-310"/>
+
+    <clayer type="Board" path="board/Corstone-315" file="Board.clayer.yml"     copy-to="board/Corstone-315" condition="Corstone-315"/>
+    <clayer type="Board" path="board/Corstone-315" file="Board-U65.clayer.yml" copy-to="board/Corstone-315" condition="Corstone-315"/>
+
+    <clayer type="Board" path="board/Corstone-320" file="Board.clayer.yml"     copy-to="board/Corstone-320" condition="Corstone-320"/>
+    <clayer type="Board" path="board/Corstone-320" file="Board-U85.clayer.yml" copy-to="board/Corstone-320" condition="Corstone-320"/>
+  </csolution> 
+</package>

@@ -1,0 +1,15 @@
+build-idx:
+  generated-by: csolution version 2.10.0
+  cdefault: ${CMSIS_COMPILER_ROOT}/cdefault.yml
+  csolution: J9App.csolution.yml
+  tmpdir: tmp
+  cprojects:
+    - cproject: M55_HP/J9App.cproject.yml
+  cbuilds:
+    - cbuild: M55_HP/J9App.Debug+AE822FA0E5597LS0.cbuild.yml
+      project: J9App
+      configuration: .Debug+AE822FA0E5597LS0
+      messages:
+        info:
+          - J9App.cbuild-pack.yml - file is already up-to-date
+          - J9App.Debug+AE822FA0E5597LS0.cbuild.yml - file is already up-to-date

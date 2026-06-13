@@ -1,0 +1,20 @@
+# Build folders
+build/
+*/build/
+out/
+*/out/
+
+# Python
+__pycache__/
+.ipynb_checkpoints/
+
+# Models (optional large files)
+*.h5
+*.keras
+
+# Binary outputs
+*.elf
+*.map
+
+# Tool caches
+*.log

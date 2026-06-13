@@ -1,0 +1,27 @@
+{
+    "version": 4,
+    "cmakeMinimumRequired": {
+            "major": 3,
+            "minor": 23,
+            "patch": 0
+    },
+    "buildPresets": [
+        {
+            "name": "usecase-targets",
+            "description": "Base preset for specifying use-case targets in build presets.",
+            "hidden": true,
+            "targets": [
+                "all",
+                "mlek_ad",
+                "mlek_asr",
+                "mlek_img_class",
+                "mlek_inference_runner",
+                "mlek_kws_asr",
+                "mlek_kws",
+                "mlek_noise_reduction",
+                "mlek_object_detection",
+                "mlek_vww"
+            ]
+        }
+    ]
+}

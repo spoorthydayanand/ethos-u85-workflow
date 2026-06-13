@@ -1,0 +1,92 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Open-CMSIS-Pack/devtools/tools/projmgr/2.10.0/tools/projmgr/schemas/cproject.schema.json
+
+project:
+  output:
+    type: elf
+
+  # -----------------------------------------------------------------------
+  # CMSIS component dependencies (resolved via installed packs)
+  # -----------------------------------------------------------------------
+  components:
+    # CMSIS Core headers (device-independent)
+    - component: ARM::CMSIS:CORE
+
+    # CMSIS-Compiler retargeting – routes printf to UART/semihost
+    - component: ARM::CMSIS-Compiler:CORE
+    - component: ARM::CMSIS-Compiler:STDOUT:Custom
+
+    # Alif device startup (vectors, SystemInit, scatter/linker file)
+    - component: AlifSemiconductor::Device:Startup
+
+    # Alif inter-core mailbox (MHU) – needed for SE services
+    - component: AlifSemiconductor::Device:SOC Peripherals:MHU
+
+    # Alif Secure Enclave runtime services (clock, power init)
+    - component: AlifSemiconductor::Device:SE runtime:Initialization
+    - component: AlifSemiconductor::Device:SE runtime:core
+
+    # Ethos-U NPU core driver (provides ethosu_driver.h)
+    - component: ARM::Machine Learning:NPU Support:Ethos-U Driver&Generic U55
+
+  # -----------------------------------------------------------------------
+  # Source files
+  # -----------------------------------------------------------------------
+  groups:
+    - group: App
+      files:
+        - file: ../J9App.cpp
+        - file: ../model_data.cpp
+        - file: ../syscalls.c
+
+  # -----------------------------------------------------------------------
+  # Include paths (TFLM and its third-party deps are NOT pack-managed,
+  # so they must be added manually here)
+  # -----------------------------------------------------------------------
+  add-path:
+    # TFLite Micro root (where tensorflow/lite/micro/micro_interpreter.h lives)
+    - ../tflite-micro
+
+    # Required TFLM internal sub-paths
+    - ../tflite-micro/tensorflow/lite/micro
+    - ../tflite-micro/tensorflow/lite/micro/kernels
+    - ../tflite-micro/tensorflow/lite/micro/arena_allocator
+    - ../tflite-micro/tensorflow/lite/core/api
+    - ../tflite-micro/tensorflow/lite/kernels/internal
+    - ../tflite-micro/tensorflow/lite/kernels/internal/optimized
+    - ../tflite-micro/tensorflow/lite/kernels/internal/reference
+    - ../tflite-micro/tensorflow/lite/schema
+
+    # Flatbuffers (TFLM dependency)
+    - ../tflite-micro/third_party/flatbuffers/include
+
+    # Gemmlowp (TFLM dependency)
+    - ../tflite-micro/third_party/gemmlowp
+
+    # Ruy (TFLM dependency, if present)
+    - ../tflite-micro/third_party/ruy
+
+    # Ethos-U core driver public headers
+    # (pack installs here; csolution resolves $CMSIS_PACK_ROOT$ automatically)
+    - ~/.cache/arm/packs/ARM/ethos-u-core-driver/1.26.2/ethos_u_core_driver/include
+
+  # -----------------------------------------------------------------------
+  # Compiler defines
+  # -----------------------------------------------------------------------
+  define:
+    # Tell TFLM to use Ethos-U delegate
+    - ETHOSU_ARCH: u55
+    - TENSORFLOW_LITE_STATIC_MEMORY
+    - TFLITE_MICRO
+
+  # -----------------------------------------------------------------------
+  # Compiler misc flags (GCC only)
+  # -----------------------------------------------------------------------
+  misc:
+    - for-compiler: GCC
+      C:
+        - -Wno-unused-parameter
+      CPP:
+        - -std=c++14
+        - -fno-exceptions
+        - -fno-rtti
+        - -Wno-unused-parameter

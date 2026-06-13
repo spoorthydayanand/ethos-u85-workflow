@@ -1,0 +1,1208 @@
+# Building the ML embedded code sample applications from sources
+
+- [Building the ML embedded code sample applications from sources](./building.md#building-the-ml-embedded-code-sample-applications-from-sources)
+  - [Build prerequisites](./building.md#build-prerequisites)
+    - [Third-party build prerequisites](./building.md#third-party-build-prerequisites)
+  - [Build options](./building.md#build-options)
+  - [Build process](./building.md#build-process)
+    - [Preparing build environment](./building.md#preparing-build-environment)
+      - [Fetching submodules](./building.md#fetching-submodules)
+      - [Fetching resource files](./building.md#fetching-resource-files)
+    - [Building for default configuration](./building.md#building-for-default-configuration)
+    - [Create a build directory](./building.md#create-a-build-directory)
+    - [Configuring the build for MPS3 SSE-300](./building.md#configuring-the-build-for-mps3-sse_300)
+      - [Using GNU Arm Embedded toolchain](./building.md#using-gnu-arm-embedded-toolchain)
+      - [Using Arm Compiler](./building.md#using-arm-compiler)
+      - [Using Arm Toolchain for Embedded](./building.md#using-arm-toolchain-for-embedded)
+      - [Configuring applications to run with single sample input](./building.md#configuring-applications-to-run-with-single-sample-input)
+      - [Generating project for Arm Development Studio](./building.md#generating-project-for-arm-development-studio)
+      - [Configuring with custom TPIP dependencies](./building.md#configuring-with-custom-tpip-dependencies)
+    - [Configuring the build for MPS3 SSE-310](./building.md#configuring-the-build-for-mps3-sse_310)
+    - [Configuring the build for MPS4 SSE-315](./building.md#configuring-the-build-for-mps4-sse_315)
+    - [Configuring the build for MPS4 SSE-320](./building.md#configuring-the-build-for-mps4-sse_320)
+    - [Configuring native unit-test build](./building.md#configuring-native-unit_test-build)
+    - [Configuring the build for simple-platform](./building.md#configuring-the-build-for-simple_platform)
+    - [Building with CMake Presets](./building.md#building-with-cmake-presets)
+    - [Building the configured project](./building.md#building-the-configured-project)
+  - [Building timing adapter with custom options](./building.md#building-timing-adapter-with-custom-options)
+  - [Add custom inputs](./building.md#add-custom-inputs)
+  - [Add custom model](./building.md#add-custom-model)
+  - [Optimize custom model with Vela compiler](./building.md#optimize-custom-model-with-vela-compiler)
+  - [Building for different Ethos-U NPU variants](./building.md#building-for-different-ethos_u-npu-variants)
+  - [Automatic file generation](./building.md#automatic-file-generation)
+
+This section assumes that you are using an **x86_64 Linux** build machine.
+
+## Build prerequisites
+
+Before proceeding, it is *essential* that the following prerequisites have been fulfilled:
+
+- GNU Arm embedded toolchain version 13.2.1 or higher, OR
+- Arm Compiler version 6.22 or higher, OR
+- Arm Toolchain for Embedded (ATfE) version 20.1.0 or higher (experimental support)
+
+Test the compiler by running:
+
+  ```commandline
+  armclang --version
+  ```
+
+  ```log
+  Product: Hardware Success Kit (Early Access)
+  Component: Arm Compiler for Embedded 6.23
+  Tool: armclang [5f103000]
+  ```
+
+Alternatively, use:
+
+  ```commandline
+  arm-none-eabi-gcc --version
+  ```
+
+  ```log
+  arm-none-eabi-gcc (Arm GNU Toolchain 13.3.Rel1 (Build arm-13.24)) 13.3.1 20240614
+  Copyright (C) 2023 Free Software Foundation, Inc.
+  This is free software; see the source for copying conditions.  There is NO
+  warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+  ```
+
+For ATfE/LLVM:
+  ```commandline
+  clang --version
+  ```
+
+  ```log
+  clang version 20.1.0
+  Target: aarch64-unknown-linux-gnu
+  Thread model: posix
+  ```
+
+> **Note:** If required, add the compiler to the path (can be added to ~/.bashrc to be set permanently):
+><br>`export PATH=/path/to/armclang/bin:$PATH`, OR
+><br>`export PATH=/path/to/gcc-arm-none-eabi-toolchain/bin:${PATH}`, OR
+><br>`export PATH=/path/to/atfe-or-llvm-toolchain/bin:${PATH}`
+
+- If you are using the proprietary Arm Compiler, ensure that the compiler license has been correctly configured.
+
+- CMake version 3.21.0 or above is installed and available on the path. Test CMake by running:
+
+    ```commandline
+    cmake --version
+    ```
+
+    ```log
+    cmake version 3.22.4
+    ```
+
+> **Note:** Required version of CMake is also installed in the Python3 virtual environment created by
+> `set_up_default_resources.py` script. See [Fetching resource files](./building.md#fetching-resource-files) section.
+>
+> To add CMake to the PATH on Ubuntu for example, use: `export PATH=/absolute/path/for/cmake/:${PATH}`
+> Once `set_up_default_resources.py` has been executed, activating the virtual environment will enable you
+> to use that CMake. Alternatively, from the root of the repository, you could use:
+>
+> `export PATH=$(readlink -e resources_downloaded/env/bin):${PATH}`
+
+- Python 3.10, 3.11 or 3.12 is installed. Check your current installed version of Python by running:
+
+    ```commandline
+    python3 --version
+    ```
+
+    ```log
+    Python 3.10.12
+    ```
+
+  > **Note:** If you do not have a supported version of Python installed, see the
+  > [Troubleshooting](./troubleshooting.md#how-to-update-python3-package-to-a-supported-version)
+  > section for instructions on how to install and use one.
+
+- The build system creates a Python virtual environment during the build process. Please make sure that Python virtual
+  environment module is installed by running:
+
+    ```commandline
+    python3 -m venv
+    ```
+
+- The build system uses external Python libraries during the building process. Please make sure that the latest pip and
+  libsndfile versions are installed.
+
+  ```commandline
+  pip3 --version
+  ```
+
+  ```log
+  pip 22.0.2 from /usr/lib/python3/dist-packages/pip
+  ```
+
+- Make
+
+    ```commandline
+    make --version
+    ```
+
+    ```log
+    GNU Make 4.1
+
+    ...
+    ```
+
+> **Note:** Add it to the path environment variable, if needed.
+
+- Access to the internet to download the third-party dependencies, specifically: TensorFlow Lite Micro, ExecuTorch,
+  Arm® *Ethos™-U55* NPU driver, and CMSIS. Instructions for downloading these are listed under:
+  [preparing build environment](./building.md#preparing-build-environment).
+
+> **NOTE**: A Docker image built from the `Dockerfile` provided will have all the above packages installed and
+> available for use. The GNU Embedded toolchain is available by default and the environment of the image will
+> have certain helper variables set for running the FVP within a non-interactive terminal. Run `env` to see the
+> list.
+
+### Third-party build prerequisites
+
+- The following software is needed by TensorFlow Lite Micro.
+
+  - xxd
+  - unzip
+  - Python Pillow
+  - curl
+
+> **Note:** Due to the fast-paced nature of development, this list might not be exhaustive.
+Please refer to Tensorflow Lite Micro documentation for more info.
+
+## Build options
+
+The project build system allows you to specify custom neural network models for each use-case along with the network
+inputs.
+
+It also builds the chosen ML framework (TensorFlow Lite for Microcontrollers or ExecuTorch) library,
+Arm® *Ethos™-U* NPU driver library, and the CMSIS-DSP library from sources.
+
+The build script is parameterized to support different options (see [common_opts.cmake](../../scripts/cmake/configuration_options/common_opts.cmake)).
+Default values for these parameters configure the build for all use-cases to be executed on an MPS3 FPGA or the Fixed Virtual
+Platform (FVP) implementation of the Arm® *Corstone™-300* design.
+
+The build parameters are:
+
+- `TARGET_PLATFORM`: The target platform to execute the application on:
+  - `mps3` (default)
+  - `mps4`
+  - `native`
+  - `simple_platform`
+
+- `TARGET_SUBSYSTEM`: The target platform subsystem. Specifies the design implementation for the deployment target.
+  - For `mps3` target these sub-systems are available:
+    - `sse-300`: this is the default, see [Arm® Corstone™-300](https://developer.arm.com/Processors/Corstone-300)
+    - `sse-310`: See [Arm® Corstone™-310](https://developer.arm.com/Processors/Corstone-310)
+  - For `mps4` target:
+    - `sse-315`: See [Arm® Corstone™-315](https://developer.arm.com/Processors/Corstone-315)
+
+- `CMAKE_TOOLCHAIN_FILE`: This built-in CMake parameter can be used to override the default toolchain file used for the
+  build. All the valid toolchain files are located in the scripts directory. For example, see:
+  [bare-metal-gcc.cmake](../../scripts/cmake/toolchains/bare-metal-gcc.cmake).
+
+- `LINKER_SCRIPT_OVERRIDE_PATH`: Optional path to a custom linker control file that overrides the platform default.
+  When left unset, the build uses the standard linker script or scatter file selected by the target platform and
+  toolchain. When set, the file must be compatible with the selected toolchain. Use case specific linker script
+  overrides take precedence over this global setting.
+
+- `<use_case>_LINKER_SCRIPT_OVERRIDE_PATH`: Optional linker control file override for a specific use case. This is set
+  in the use case CMake logic and takes precedence over `LINKER_SCRIPT_OVERRIDE_PATH` for that application target.
+
+- `ML_FRAMEWORK`: Optional parameter to set the ML framework to be used. Valid options are `TensorFlowLiteMicro` and
+  `ExecuTorch`. Default value is `TensorFlowLiteMicro`. This option will configure the framework build steps and
+  include them in the binary tree. All use case examples should advertise which framework they support and only
+  the examples that support the framework selected will be included in the binary tree.
+
+- `TENSORFLOW_SRC_PATH`: Path for TensorFlow Lite Micro source tree. Default value points to the
+  `dependencies/tensorflow` git submodule. Repository is hosted
+  here: [TensorFlow Lite Micro](https://github.com/tensorflow/tflite-micro.git)
+
+- `EXECUTORCH_SRC_PATH`: Path for ExecuTorch source tree. Default value points to
+  `dependencies/executorch` git submodule. Repository is hosted
+  here: [ExecuTorch](https://github.com/pytorch/executorch)
+
+- `ETHOS_U_NPU_DRIVER_SRC_PATH`: The path to the *Ethos-U* NPU core driver sources. The default value points to the
+  `dependencies/core-driver` git submodule. Repository is hosted here:
+  [ethos-u-core-driver](https://gitlab.arm.com/artificial-intelligence/ethos-u/ethos-u-core-driver).
+
+- `CMSIS_SRC_PATH`, `CMSIS_DSP_SRC_PATH`, `CMSIS_NN_SRC_PATH`: Paths to the CMSIS sources to be used to build TensorFlow
+   Lite Micro library. These parameters are optional and are only valid for Arm® *Cortex®-M* CPU targeted
+   configurations.  The default values point to the git submodules. Repositories are hosted here:
+   [CMSIS-6](https://github.com/ARM-software/CMSIS_6.git), [CMSIS-DSP](https://github.com/ARM-software/CMSIS-DSP)
+   and [CMSIS-NN](https://github.com/ARM-software/CMSIS-NN.git).
+
+- `CMSIS_DSP_MIN_REQ_SRC_LIST`: Optional boolean parameter that can toggle whether to compile all CMSIS-DSP sources
+   or just a small subset of the whole library. By default, it is set to `ON` to reduce compilation time, but can be
+   set to `OFF` if full DSP functionality is required by additions made within this project, or when this project is
+   used as a dependency.
+
+- `ETHOS_U_NPU_ENABLED`: Sets whether the use of *Ethos-U* NPU is available for the deployment target. By default, this
+  is set and therefore application is built with *Ethos-U* NPU supported.
+
+- `ETHOS_U_NPU_ID`: The *Ethos-U* NPU processor:
+  - `U55` (default)
+  - `U65`
+  - `U85`
+
+- `ETHOS_U_NPU_MEMORY_MODE`:  The *Ethos-U* NPU memory mode:
+  - `Shared_Sram` (default for *Ethos-U55* NPU)
+  - `Dedicated_Sram` (default for *Ethos-U65* and *Ethos-U85* NPU)
+  - `Sram_Only`
+
+  > **Note:** The `Sram_Only` and `Shared_Sram` memory modes are available on
+  > *Ethos-U55*, *Ethos-U65* and *Ethos-U85* NPU,
+  > and `Dedicated_Sram` only for *Ethos-U65* and *Ethos-U85* NPU.
+
+- `ETHOS_U_NPU_CONFIG_ID`: This parameter is set by default based on the value of `ETHOS_U_NPU_ID`.
+  For Ethos-U55, it defaults to the `H128` indicating that the Ethos-U55 128 MAC optimised model
+  should be used. For Ethos-U65, it defaults to `Y256` and for Ethos-U85 it defaults to `Z256`.
+  However, the user can override these defaults to a configuration ID from `H32`, `H64`, `H256`, `Y512`,
+  `Z128`, `Z512`, `Z1024` and `Z2048`.
+
+  > **Note:** This ID is only used to choose which tflite/pte file path is to be used by the CMake
+  > configuration for all the use cases. If the user has overridden use-case specific model path
+  > parameter `ETHOS_U_NPU_CONFIG_ID` parameter will become irrelevant for that use-case. Also, the
+  > model files for the chosen `ETHOS_U_NPU_CONFIG_ID` are expected to exist in the default locations.
+  > See [Fetching resource files](./building.md#fetching-resource-files) for details on how to do this for your
+  > chosen configuration.
+
+- `ETHOS_U_NPU_CACHE_SIZE`: The *Ethos-U* NPU cache size used if the *Ethos-U* NPU processor selected with the option
+  `ETHOS_U_NPU_ID` is `U65` or `U85`.
+  Default value is 393216 (see [default_vela.ini](../../scripts/vela/default_vela.ini) ).
+
+- `CPU_PROFILE_ENABLED`: Sets whether profiling information for the CPU core should be displayed. By default, this is
+  set to false, but can be turned on for FPGA targets. The FVP and the CPU core cycle counts are **not** meaningful and
+  are not to be used.
+
+- `MLEK_LOG_ENABLE`: Enables/disables logging for the whole application. Default is set to `ON`, but if this
+  project is wrapped as a dependency, the definitions provided by logging interface could be overridden or disabled
+  altogether.
+
+- `MLEK_LOG_LEVEL`: Sets the verbosity level for the output of the application over `UART`, or `stdout`. Valid values
+  are: `MLEK_LOG_LEVEL_TRACE`, `MLEK_LOG_LEVEL_DEBUG`, `MLEK_LOG_LEVEL_INFO`, `MLEK_LOG_LEVEL_WARN`, and
+  `MLEK_LOG_LEVEL_ERROR`. The default is set to: `MLEK_LOG_LEVEL_INFO`.
+
+- `<use_case>_MODEL_PATH`: The path to the model file that is processed and is included into the application
+  `axf` file. The default value points to one of the delivered set of models. Make sure that the model chosen is aligned
+  with the `ETHOS_U_NPU_ENABLED` setting.
+
+  - When using the *Ethos-U* NPU backend, the NN model is assumed to be optimized by Vela compiler. However, even if
+    not, if it is supported by the specified ML framework it falls back on the CPU and is executed.
+
+  - When use of the *Ethos-U* NPU is disabled, and if a Vela optimized model is provided, then the application reports
+    a failure at runtime.
+
+- `USE_CASE_BUILD`: Specifies the list of applications to build. By default, the build system scans sources to identify
+  available ML applications and produces executables for all detected use-cases. This parameter can accept single value,
+  for example: `USE_CASE_BUILD=img_class`, or multiple values. For example: `USE_CASE_BUILD="img_class;kws"`.
+
+- `ETHOS_U_NPU_TIMING_ADAPTER_SRC_PATH`: The path to timing adapter sources. The default value points to the
+  `timing_adapter` dependencies folder.
+
+- `ETHOS_U_NPU_TIMING_ADAPTER_ENABLED`: Specifies if the *Ethos-U* timing adapter is enabled.
+
+  > **NOTE**: This setting is set to ON for all platforms if `ETHOS_U_NPU_ENABLED` is set. However, it is overridden
+  > to OFF for Arm® Corstone-310 implementation.
+
+- `TA_CONFIG_FILE`: The path to the CMake configuration file that contains the timing adapter parameters. Used only if
+  the timing adapter build is enabled. Default for Ethos-U55 NPU is
+  [ta_config_u55_high_end.cmake](../../scripts/cmake/timing_adapter/ta_config_u55_high_end.cmake),
+  for Ethos-U65 NPU is [ta_config_u55_high_end.cmake](../../scripts/cmake/timing_adapter/ta_config_u55_high_end.cmake).
+  For Ethos-U85 NPU, the default configuration file depends on the MAC configuration.
+  The default for 128 and 256 is [ta_config_u85_sys_dram_low.cmake](../../scripts/cmake/timing_adapter/ta_config_u85_sys_dram_low.cmake),
+  the default for 512 and 1024 is [ta_config_u85_sys_dram_mid.cmake](../../scripts/cmake/timing_adapter/ta_config_u85_sys_dram_mid.cmake),
+  and the default for 2048 is [ta_config_u85_sys_dram_high.cmake](../../scripts/cmake/timing_adapter/ta_config_u85_sys_dram_high.cmake).
+
+- `TENSORFLOW_LITE_MICRO_CLEAN_BUILD`: Optional parameter to enable, or disable, "cleaning" prior to building for the
+  TensorFlow Lite Micro library. Enabled by default.
+
+- `TENSORFLOW_LITE_MICRO_CLEAN_DOWNLOADS`: Optional parameter to enable wiping out `TPIP` downloads from TensorFlow
+  source tree prior to each build. Disabled by default.
+
+- `USE_SINGLE_INPUT`: Sets whether each use case will use a single default input sample file. This is useful for
+   quicker functional testing especially for CI tests. Disabled by default.
+
+- `BUILD_FVP_TESTS`: Specifies whether to generate tests for built applications targeted to run on the FVP. Tests will
+  be generated for all use-cases. It is recommended to set `USE_SINGLE_INPUT` to `ON` when using this option.
+
+- `FVP_PATH`: The path to the FVP to be used for testing built applications. This option is available only if
+`BUILD_FVP_TESTS` option is switched `ON`.
+
+- `FVP_VSI_ENABLED`: Configures the build for applications to use
+  [Virtual Streaming Interface](https://arm-software.github.io/AVH/main/simulation/html/group__arm__vsi.html) (VSI)
+  available for FVP targets. Read more about VSI requirements [here](./deployment.md#vsi-requirements) and about
+  deployment [here](./deployment.md#deployment-with-virtual-streaming-interface). Note that enabling this option will
+  conflict with `BUILD_FVP_TESTS`.
+
+- `FVP_VSI_SRC_PATH`: If `FVP_VSI_ENABLED` is `ON`, this cache variable defaults to the git submodule for AVH
+   repository. This directory is expected to provide the VSI driver sources and Python scripts.
+
+- `SEMIHOSTING_ENABLED`: Toggles semihosting support. For more information on semihosting, see
+  [What is semihosting?](https://developer.arm.com/documentation/dui0203/j/semihosting/about-semihosting/what-is-semihosting-)
+  By default, this is set to `OFF` and is only included as an option for `MPS3` and `MPS4` based target platforms.
+
+  > **NOTE**: If semihosting enabled application is used with FVPs, additional command line arguments must be provided.
+  > See [semihosting section under deployment](./deployment.md#semihosting).
+
+- `RESOURCES_PATH`: The path to the resources downloaded by the set_up_default_resources.py script
+  and compiled using Vela.  This can be set if this script was run using the `--downloads-dir` flag to
+  override the default location for these models.  Defaults to `./resources_downloaded` relative to the
+  root of this project.
+
+- `INTERACTIVE_MODE`: Enables or disables interactive mode for the use cases. When set to `ON` (by default `OFF`),
+  the program pauses and waits for user input before proceeding to the next inference.
+  This flag cannot be used when running the tests.
+
+For details on the specific use-case build options, follow the instructions in the use-case specific documentation.
+
+Also, when setting any of the CMake configuration parameters that expect a directory, or file, path, **use absolute
+paths instead of relative paths**.
+
+## Build process
+
+The build process uses three major steps:
+
+1. Prepare the build environment by downloading third-party sources required, see
+   [Preparing build environment](./building.md#preparing-build-environment).
+
+2. Configure the build for the platform chosen. This stage includes:
+    - CMake options configuration
+    - When `<use_case>_MODEL_PATH` build options are not provided, the default neural network models can be
+      downloaded from [Arm ML-Zoo](https://github.com/ARM-software/ML-zoo). For native builds, the network input and
+      output data for tests are downloaded.
+    - Some files such as neural network models, network inputs, and output labels are automatically converted into C/C++
+      arrays, see: [Automatic file generation](./building.md#automatic-file-generation).
+
+3. Build the application.
+   Application and third-party libraries are now built. For further information, see:
+   [Building the configured project](./building.md#building-the-configured-project).
+
+### Preparing build environment
+
+#### Fetching submodules
+
+Certain third-party sources are required to be present on the development machine to allow the example sources in this
+repository to link against.
+
+1. [TensorFlow Lite Micro repository](https://github.com/tensorflow/tensorflow)
+2. [ExecuTorch repository](https://github.com/pytorch/executorch)
+3. [Ethos-U NPU core driver repository](https://gitlab.arm.com/artificial-intelligence/ethos-u/ethos-u-core-driver)
+4. [Ethos-U NPU core platform repository](https://gitlab.arm.com/artificial-intelligence/ethos-u/ethos-u-core-platform)
+5. [CMSIS-6](https://github.com/ARM-software/CMSIS_6.git)
+6. [CMSIS-DSP](https://github.com/ARM-software/CMSIS-DSP.git)
+7. [CMSIS-NN](https://github.com/ARM-software/CMSIS-NN.git)
+8. [CMSIS-DFP](https://github.com/ARM-software/Cortex_DFP.git)
+
+> **Note:** If you are using non git project sources, run `python3 ./scripts/py/download_dependencies.py` and ignore further git
+> instructions. Proceed to [Fetching resource files](./building.md#fetching-resource-files) section.
+
+To pull the submodules:
+
+```sh
+git submodule update --init -j 4  # set the number of parallel threads to use
+```
+
+This downloads all required components and places them in a tree under `dependencies` directory.
+
+```tree
+dependencies
+  ├── cmsis-5
+  ├── cmsis-6
+  ├── cmsis-dsp
+  ├── cmsis-nn
+  ├── core-driver
+  ├── core-platform
+  ├── cortex-dfp
+  ├── executorch
+  └── tensorflow
+```
+
+> **Note:** The default source paths for the `TPIP` sources assume the above directory structure. However, all the
+> relevant paths can be overridden by CMake configuration arguments `TENSORFLOW_SRC_PATH`, `EXECUTORCH_SRC_PATH`,
+> `ETHOS_U_NPU_DRIVER_SRC_PATH`, `CMSIS_SRC_PATH`, `CMSIS_DSP_SRC_PATH`, `CMSIS_NN_SRC_PATH` and `CORTEX_DFP_SRC_PATH`.
+
+#### Fetching resource files
+
+Every ML use-case example in this repository also depends on external neural network models. To download these, run the
+following command from the root of the repository:
+
+```sh
+python3 ./set_up_default_resources.py
+```
+
+This fetches every model into the `resources_downloaded` directory. It also optimizes the models using the Vela compiler
+for the default 128 MACs configuration of the Arm® *Ethos™-U55* NPU, the default 256 MACs configuration of the
+Arm® *Ethos™-U65* NPU and the 256 MACs configuration of the Arm® *Ethos™-U85* NPU.
+
+> **Note:** This script requires Python 3.10 to 3.12 inclusive. Please make sure all
+> [build prerequisites](./building.md#build-prerequisites) are satisfied. If your
+> environment points to a different system-installed Python3 version, choose a supported
+> version explicitly after installing it:
+> ```sh
+> python3.10 ./set_up_default_resources.py
+> ```
+>
+> **Note:** This script also installs required version of CMake into the virtual environment, which can be used by activating it.
+
+Additional command line arguments supported by this script are:
+
+- `--additional-ethos-u-config-name`: if you need to optimize the models for a different Ethos-U configuration,
+  you can pass a list of additional configurations for Vela compiler. For example, to optimize the downloaded models
+  for *Ethos™-U55* 32 MAC configuration and *Ethos™-U65* 512 MAC configuration, you can choose to run:
+
+  ```sh
+  python3 ./set_up_default_resources.py \
+    --additional-ethos-u-config-name ethos-u55-32 \
+    --additional-ethos-u-config-name ethos-u65-512
+  ```
+
+  > **Note:** As the argument name suggests, the configuration names are **in addition to** the default ones:
+  > `ethos-u55-128`, `ethosu-u65-256` and `ethosu-u85-256`.
+
+- `--arena-cache-size`: the size of the arena cache memory area, in bytes.
+  The default value is:
+  - the internal SRAM size for Corstone-300 implementation on MPS3 specified by AN552,
+  when optimizing for the default 128 MACs configuration of the Arm® *Ethos™-U55* NPU.
+  - the default value specified in the Vela configuration file [default_vela.ini](../../scripts/vela/default_vela.ini),
+  when optimizing for the default 256 MACs configuration of the Arm® *Ethos™-U65* NPU
+  or the default 256 MACs configuration of the Arm® *Ethos™-U85* NPU.
+
+- `--use-case-resources-file`: Path to a JSON file pointing to resources to be downloaded. See the default
+  [use_case_resources.json](../../resources/use_case_resources.json) as an example.
+
+- `--downloads-dir`: Root directory where the resources are downloaded.
+
+- `--ml-frameworks`: Select whether TensorFlow Lite Micro and/or ExecuTorch models are downloaded and optimised.
+  defaults to `tflm`.
+
+- `--use-case`: Limit the model downloading and optimisation to the specified list of use cases.
+
+- `--parallel`: Specify the number of threads used to download and optimise modules in parallel.
+
+- `--requirements-file`: Provide the path to a requirements.txt file that will be installed into the Python environment.
+
+- `--use-case-resources-file`: Provide paths to additional files of the same structure as
+  [use_case_resources.json](../../resources/use_case_resources.json) for downloading and optimising additional models.
+
+- `--http-header`: When downloading models from other locations, e.g. services that require authorisation,
+  this argument can be used to set additional HTTP headers that are needed for the download to succeed.
+
+> **NOTE**: If you provide a different location by providing `downloads-dir` option, ensure `RESOURCES_PATH` is set
+> correctly for the associated CMake configuration. See [build options](building.md#build-options) for details.
+
+### Building for default configuration
+
+A helper script `build_default.py` is provided to configure and build all the applications. It configures the project
+with default settings i.e., for `mps3` target, `sse-300` subsystem and *Ethos-U55* timing-adapter settings.
+Under the hood, it invokes all the necessary
+CMake commands that are described in the next sections.
+
+If using the `Arm GNU embedded toolchain`, run:
+
+```commandline
+./build_default.py
+```
+
+If using the `Arm Compiler`, run:
+
+```commandline
+./build_default.py --toolchain arm
+```
+
+For LLVM/Clang builds, run:
+
+```commandline
+./build_default.py --toolchain llvm
+```
+
+To build ExecuTorch use cases instead of TensorFlow Lite Micro, run:
+
+```commandline
+./build_default.py --ml-framework executorch
+```
+
+Additional command line arguments supported by this script are:
+
+- `--skip-download`: Do not download resources: models and test vectors
+- `--skip-vela`: Do not run Vela optimizer on downloaded models.
+- `--npu-config-name`: Arm Ethos-U configuration to build for. The default value is
+    `ethos-u55-128`. Valid values are:
+  - `ethos-u55-32`
+  - `ethos-u55-64`
+  - `ethos-u55-128`
+  - `ethos-u55-256`
+  - `ethos-u65-256`
+  - `ethos-u65-128`
+  - `ethos-u85-256`
+  - `ethos-u85-512`
+  - `ethos-u85-1024`
+  - `ethos-u85-2048`
+- `--make-jobs`: Specifies the number of concurrent jobs to use for compilation.
+  The default value is equal to the number of cores in the system.
+  Lowering this value can be useful in case of limited resources.
+- `--make-verbose`: Make the compile process verbose. This is equal to run ```make VERBOSE=1```.
+
+To build for *Ethos™-U55* 32 MAC configuration, using `Arm Compiler`, run:
+
+```commandline
+./build_default.py --npu-config-name ethos-u55-32 --toolchain arm
+```
+
+### Create a build directory
+
+To configure the build project manually, create a build directory in the root of the project and navigate inside:
+
+```commandline
+mkdir build && cd build
+```
+
+### Configuring the build for MPS3 SSE-300
+
+#### Using GNU Arm Embedded toolchain
+
+On Linux, if using `Arm GNU Toolchain`, execute the following command to build the application to run on the
+Arm® *Ethos™-U* NPU when providing only the mandatory arguments for CMake configuration:
+
+```commandline
+cmake ../
+```
+
+The preceding command builds for the default target platform `mps3`, the default subsystem `sse-300`, using the
+default toolchain file for the target as `bare-metal-gcc` and the default *Ethos-U55* timing adapter settings.
+This is equivalent to running:
+
+```commandline
+cmake .. \
+    -DCMAKE_TOOLCHAIN_FILE=scripts/cmake/toolchains/bare-metal-gcc.cmake
+    -DTARGET_PLATFORM=mps3 \
+    -DTARGET_SUBSYSTEM=sse-300 \
+    -DTA_CONFIG_FILE=scripts/cmake/timing_adapter/ta_config_u55_high_end.cmake
+```
+
+#### Using Arm Compiler
+
+If using `Arm Compiler` to set the compiler and platform-specific parameters, the toolchain option
+`CMAKE_TOOLCHAIN_FILE` can be used to point to the `ARMClang` CMake file, like so:
+
+```commandline
+cmake ../ -DCMAKE_TOOLCHAIN_FILE=scripts/cmake/toolchains/bare-metal-armclang.cmake
+```
+
+To configure a build that can be debugged using Arm Development Studio, specify the build type as `Debug`. For example:
+
+```commandline
+cmake .. \
+    -DCMAKE_TOOLCHAIN_FILE=scripts/cmake/toolchains/bare-metal-armclang.cmake \
+    -DCMAKE_BUILD_TYPE=Debug
+```
+
+#### Using Arm Toolchain for Embedded
+
+Similar to others, for using an LLVM/Clang based toolchain like the Arm Toolchain for Embedded, the toolchain option
+`CMAKE_TOOLCHAIN_FILE` can be set as:
+
+```commandline
+cmake ../ -DCMAKE_TOOLCHAIN_FILE=scripts/cmake/toolchains/bare-metal-llvm.cmake
+```
+
+#### Configuring applications to run with single sample input
+
+Default CMake configuration behaviour looks for input samples for each use case in the default directory. All these
+inputs are baked-in into the application. If the number of files baked in is greater than one the resulting application
+will cycle through all the samples before finishing.
+[Deploying on an FVP emulating MPS3](./deployment.md#deploying-on-an-fvp).
+
+To configure the project to use single input for each use case, CMake option `USE_SINGLE_INPUT` can be set to `ON`.
+
+
+```commandline
+cmake ../ -DUSE_SINGLE_INPUT=ON
+```
+
+This is useful in quick functional testing scenario or for running tests in a CI environment. To configure automated
+testing using the CTest framework:
+
+```commandline
+cmake .. \
+    -DUSE_SINGLE_INPUT=ON \
+    -DBUILD_FVP_TESTS=ON \
+    -DFVP_PATH=/home/user/FVP_Corstone_SSE-300/models/Linux64_GCC-6.4/FVP_Corstone_SSE-300_Ethos-U55
+```
+
+This will allow the built application to be executed on the FVP in headless mode using:
+
+```commandline
+ctest --verbose
+```
+
+#### Generating project for Arm Development Studio
+
+To import the project into Arm Development Studio, add the Eclipse project generator and `CMAKE_ECLIPSE_VERSION` in the
+CMake command.
+
+It is advisable that the build directory is one level up relative to the source directory. When the build has been
+generated, you must follow the Import wizard in Arm Development Studio and import the existing project into the
+workspace.
+
+You can then compile and debug the project using Arm Development Studio. Note that the following command is executed one
+level up from the source directory:
+
+```commandline
+cmake \
+    -DTARGET_PLATFORM=mps3 \
+    -DTARGET_SUBSYSTEM=sse-300 \
+    -DCMAKE_TOOLCHAIN_FILE=scripts/cmake/toolchains/bare-metal-armclang.cmake \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -G "Eclipse CDT4 - Unix Makefiles" \
+    -DCMAKE_ECLIPSE_VERSION=4.15 \
+    ml-embedded-evaluation-kit
+```
+
+#### Configuring with custom TPIP dependencies
+
+If the TensorFlow source tree is not in its default expected location, set the path using `TENSORFLOW_SRC_PATH`.
+Similarly, if the *Ethos-U* NPU driver and `CMSIS` are not in the default location, then use
+`ETHOS_U_NPU_DRIVER_SRC_PATH` and `CMSIS_SRC_PATH` to configure their location.
+
+For example:
+
+```commandline
+cmake .. \
+    -DTENSORFLOW_SRC_PATH=/my/custom/location/tensorflow \
+    -DETHOS_U_NPU_DRIVER_SRC_PATH=/my/custom/location/core-driver \
+    -DCMSIS_SRC_PATH=/my/custom/location/cmsis
+```
+
+> **Note:** If re-building with changed parameters values, we recommend that you clean the build directory and re-run
+> the CMake command.
+
+### Configuring the build for MPS3 SSE-310
+
+On Linux, execute the following command to build the application for target platform `mps3` and subsystem `sse-310`,
+using the default toolchain file for the target as `bare-metal-gcc`.
+This is equivalent to running:
+
+```commandline
+cmake .. \
+    -DCMAKE_TOOLCHAIN_FILE=scripts/cmake/toolchains/bare-metal-gcc.cmake \
+    -DTARGET_PLATFORM=mps3 \
+    -DTARGET_SUBSYSTEM=sse-310
+```
+
+> **Note:** Timing adapters are not supported for this subsystem.
+
+### Configuring the build for MPS4 SSE-315
+
+On Linux, execute the following command to build the application for target platform `mps4` and subsystem `sse-315`,
+using the default toolchain file for the target as `bare-metal-gcc`.
+This is equivalent to running:
+
+```commandline
+cmake .. \
+    -DCMAKE_TOOLCHAIN_FILE=scripts/cmake/toolchains/bare-metal-gcc.cmake \
+    -DTARGET_PLATFORM=mps4 \
+    -DTARGET_SUBSYSTEM=sse-315
+```
+
+> **Note:** Timing adapters are not supported for this subsystem.
+
+### Configuring the build for MPS4 SSE-320
+
+On Linux, execute the following command to build the application for target platform `mps4` and subsystem `sse-320`,
+using the default toolchain file for the target as `bare-metal-gcc`.
+This is equivalent to running:
+
+```commandline
+cmake .. \
+    -DCMAKE_TOOLCHAIN_FILE=scripts/cmake/toolchains/bare-metal-gcc.cmake \
+    -DTARGET_PLATFORM=mps4 \
+    -DTARGET_SUBSYSTEM=sse-320
+```
+
+To build for Corstone™-320 FPGA (for MPS4 board), an additional flag must be supplied:
+
+```commandline
+cmake .. \
+    -DCMAKE_TOOLCHAIN_FILE=scripts/cmake/toolchains/bare-metal-gcc.cmake \
+    -DTARGET_PLATFORM=mps4 \
+    -DTARGET_SUBSYSTEM=sse-320 \
+    -DFPGA_PLATFORM_SSE_320=ON
+```
+
+The flag `-DFPGA_PLATFORM_SSE_320=ON` is needed for the binaries to work on the MPS4 board, and the binaries produced by this
+build will not work on FVP.  Omit `FPGA_PLATFORM_SSE_320` to produce binaries that can run on Corstone™-320 FVP.
+
+### Configuring native unit-test build
+
+```commandline
+cmake ../ -DTARGET_PLATFORM=native
+```
+
+Results of the build are placed under the `build/bin/` folder. For example:
+
+```tree
+bin
+├── arm_ml_embedded_evaluation_kit-<usecase1>-tests
+├── arm_ml_embedded_evaluation_kit-<usecase2>-tests
+├── ethos-u-<usecase1>
+└── ethos-u-<usecase1>
+```
+
+### Configuring the build for simple-platform
+
+```commandline
+cmake ../ -DTARGET_PLATFORM=simple_platform
+```
+
+Again, if using `Arm Compiler`, use:
+
+```commandline
+cmake .. \
+    -DTARGET_PLATFORM=simple_platform \
+    -DCMAKE_TOOLCHAIN_FILE=scripts/cmake/toolchains/bare-metal-armclang.cmake
+```
+
+### Building with CMake Presets
+
+For building using CMake Presets please see [Building with CMake Presets](./cmake_presets.md#building-with-cmake-presets)
+
+### Building the configured project
+
+If the CMake command succeeds, build the application as follows:
+
+```commandline
+make -j4
+```
+
+To see compilation and link details, add `VERBOSE=1`.
+
+Results of the build are placed underÂ `build/bin`Â folder, for example:
+
+```tree
+bin
+ ├── mlek_<use_case_name>.axf
+ ├── mlek_<use_case_name>.htm
+ ├── mlek_<use_case_name>.map
+ └── sectors
+        ├── images.txt
+        └── <use_case>
+                ├── ddr.bin
+                └── itcm.bin
+```
+
+Where for each implemented use-case under the `source/use-case` directory, the following build artifacts are created:
+
+- `mlek_<use-case name>.axf`: The built application binary for an ML use-case.
+
+- `mlek_<use-case name>.map`: Information from building the application. For example: Libraries used, what was
+  optimized, and location of objects.
+
+- `mlek_<use-case name>.htm`: Human readable file containing the call graph of application functions.
+
+- `sectors/<use-case>`: Folder containing the built application. Split into files for loading into different FPGA
+  memory regions.
+
+- `images.txt`: Tells the FPGA which memory regions to use for loading the binaries in the `sectors/..`
+  folder.
+
+> **Note:**  For the specific use-case commands, refer to the relative section in the use-case documentation.
+
+## Building timing adapter with custom options
+
+For custom configuration of timing adapter see [Timing adapter](./timing_adapters.md#timing-adapter)
+
+## Add custom inputs
+
+The application performs inference on input data found in the folder set by the CMake parameters, for more information
+see section 3.3 in the specific use-case documentation.
+
+## Add custom model
+
+The application performs inference using the model pointed to by the CMake parameter `MODEL_PATH`.
+
+> **Note:** If you want to run the model using *Ethos-U* NPU, ensure that your custom model has been run through the
+> Vela compiler successfully before continuing.
+
+To run the application with a custom model, you must provide a `labels_<model_name>.txt` file of labels that are
+associated with the model.
+
+Each line of the file should correspond to one of the outputs in your model. See the provided
+`labels_mobilenet_v2_1.0_224.txt` file in the `img_class` use-case for an example.
+
+Then, you must set `<use_case>_MODEL_PATH` to the location of the Vela processed model file and
+`<use_case>_LABELS_TXT_FILE` to the location of the associated labels file (if necessary), like so:
+
+```commandline
+cmake .. \
+    -D<use_case>_MODEL_PATH=<path/to/custom_model_after_vela.tflite> \
+    -D<use_case>_LABELS_TXT_FILE=<path/to/labels_custom_model.txt> \
+    -DTARGET_PLATFORM=mps3 \
+    -DTARGET_SUBSYSTEM=sse-300 \
+    -DCMAKE_TOOLCHAIN_FILE=scripts/cmake/toolchains/bare-metal-armclang.cmake
+```
+
+> **Note:** For the specific use-case command, refer to the relative section in the use-case documentation.
+>
+> **Note:** Clean the build directory before re-running the CMake command.
+
+The TensorFlow Lite for Microcontrollers model pointed to by `<use_case>_MODEL_PATH` and the labels text file
+pointed to by `<use_case>_LABELS_TXT_FILE` are converted to C++ files during the CMake configuration stage. They are
+then compiled into the application for performing inference with.
+
+The log from the configuration stage tells you what model path and labels file have been used. For example:
+
+```log
+-- User option TARGET_PLATFORM is set to mps3
+-- User option <use_case>_MODEL_PATH is set to
+<path/to/custom_model_after_vela.tflite>
+...
+-- User option <use_case>_LABELS_TXT_FILE is set to
+<path/to/labels_custom_model.txt>
+...
+-- Using <path/to/custom_model_after_vela.tflite>
+++ Converting custom_model_after_vela.tflite to custom_model_after_vela.tflite.cc
+-- Generating labels file from <path/to/labels_custom_model.txt>
+-- writing to <path/to/build>/generated/include/Labels.hpp and <path/to/build>/generated/src/Labels.cc
+...
+```
+
+After compiling, your custom model has now replaced the default one in the application.
+
+## Optimize custom model with Vela compiler
+
+> **Note:** This tool is not available within this project. It is a Python tool available from
+> <https://pypi.org/project/ethos-u-vela/>.
+> The source code is hosted on <https://gitlab.arm.com/artificial-intelligence/ethos-u/ethos-u-vela>.
+
+> **Note:** The correct version of Vela should be used and this depends on the versions of software dependencies used
+> or you may encounter issues when trying to run applications on different variants of Ethos-U NPUs.
+> See <https://gitlab.arm.com/artificial-intelligence/ethos-u/ethos-u-vela> for more details of which versions align.
+
+The Vela compiler is a tool that can optimize a neural network model into a version that can run on an embedded system
+containing an *Ethos-U* NPU.
+
+The optimized model contains custom operators for sub-graphs of the model that can be accelerated by the *Ethos-U*
+NPU. The remaining layers that cannot be accelerated, are left unchanged and are run on the CPU using optimized, or
+`CMSIS-NN`, or reference kernels that are provided by the inference engine.
+
+After the compilation, the optimized model can only be executed on a system using an *Ethos-U* NPU.
+
+> **Note:** The NN model provided during the build and compiled into the application executable binary defines whether
+the CPU or NPU is used to execute workloads. If an unoptimized model is used, then inference runs on the *Cortex-M* CPU.
+
+The Vela compiler accepts parameters to influence a model optimization. The model provided within this project has been
+optimized with the following parameters:
+
+```commandline
+vela \
+    --accelerator-config=ethos-u55-128 \
+    --optimise Performance \
+    --config my_vela_cfg.ini \
+    --memory-mode Shared_Sram \
+    --system-config Ethos_U55_High_End_Embedded \
+    <model>.tflite
+```
+
+The Vela command contains the following:
+
+- `--accelerator-config`: Specifies the accelerator configuration to use between `ethos-u55-256`, `ethos-u55-128`,
+  `ethos-u55-64`, `ethos-u55-32`, `ethos-u65-256`, `ethos-u65-512`, `ethos-u85-128`, `ethos-u85-256`, `ethos-u85-512`,
+  `ethos-u85-1024` and `ethos-u85-2048`.
+- `--optimise`: Sets the optimisation strategy to Performance or Size. The Size strategy results in a model minimising
+  the SRAM usage whereas the Performance strategy optimises the neural network for maximal performance.
+  Note that if using the Performance strategy, you can also pass the `--arena-cache-size` option to Vela.
+- `--config`: Specifies the path to the Vela configuration file. The format of the file is a Python ConfigParser `.ini`
+    file. An example can be found in the `dependencies` folder [default_vela.ini](../../scripts/vela/default_vela.ini).
+- `--memory-mode`: Selects the memory mode to use as specified in the Vela configuration file.
+- `--system-config`: Selects the system configuration to use as specified in the Vela configuration file:
+  `Ethos_U55_High_End_Embedded`for *Ethos-U55*, `Ethos_U65_High_End` for *Ethos-U65*,
+  `Ethos_U85_SYS_DRAM_Low` for *Ethos-U85* with 128 or 256 MACs configurations,
+  `Ethos_U85_SYS_DRAM_Mid_512` for *Ethos-U85* with 512 MACs configuration,
+  `Ethos_U85_SYS_DRAM_Mid_1024` for *Ethos-U85* with 1024 MACs configuration and
+  `Ethos_U85_SYS_DRAM_Mid_2048` for *Ethos-U85* with 2048 MACs configuration.
+
+Vela compiler accepts `.tflite` file as input and saves optimized network model as a `.tflite` file.
+
+Using `--show-cpu-operations` and `--show-subgraph-io-summary` shows all the operations that fall back to the CPU. And
+includes a summary of all the subgraphs and their inputs and outputs.
+
+To see Vela helper for all the parameters use: `vela --help`.
+
+> **Note:** By default, use of the *Ethos-U* NPU is enabled in the CMake configuration. This can be changed by passing
+> `-DETHOS_U_NPU_ENABLED`.
+
+> **Note:** The performance summary produced by Vela compiler for any model are **estimates only**. Vela computes
+> these figures from a very simplistic approximation. To get accurate performance numbers for the Arm Ethos-U NPU, use
+> of FVP or FPGA platforms is recommended.
+
+## Building for different Ethos-U NPU variants
+
+The building process described in the previous paragraphs assumes building for the default *Ethos-U55* NPU with 128 MACs,
+using the *Ethos-U55* High End timing adapter system configuration.
+
+To build for a different *Ethos-U* NPU variant:
+
+- Optimize the model with Vela compiler with the correct parameters. See [Optimize custom model with Vela compiler](./building.md#optimize-custom-model-with-vela-compiler).
+- Use the correct `ETHOS_U_NPU_ID`: `U55` for *Ethos-U55* NPU, `U65` for *Ethos-U65* NPU or `U85` for *Ethos-U85*.
+- Use the Vela model as custom model in the building command. See [Add custom model](./building.md#add-custom-model)
+- Use the correct timing adapter settings configuration. See [Building timing adapter with custom options](./building.md#building-timing-adapter-with-custom-options)
+
+For example, when building for *Ethos-U65* High End system configuration and 512 MACs/cc, the Vela command will be:
+
+```commandline
+vela \
+    <model_file>.tflite \
+    --accelerator-config ethos-u65-512 \
+    --optimise Performance \
+    --memory-mode=Dedicated_Sram \
+    --system-config=Ethos_U65_High_End \
+    --config=../scripts/vela/default_vela.ini
+```
+
+And the cmake command:
+
+```commandline
+cmake .. \
+    -DETHOS_U_NPU_ID=U65 \
+    -D<use_case>_MODEL_PATH=<path/to/ethos_u65_vela_model.tflite>
+```
+
+## Automatic file generation
+
+As mentioned in the previous sections, some files such as neural network models, network inputs, and output labels are
+automatically converted into C/C++ arrays during the CMake project configuration stage.
+
+Also, some code is generated to allow access to these arrays.
+
+For example:
+
+```log
+-- Found sources for use-case img_class
+-- User option img_class_FILE_PATH is set to /tmp/samples
+-- User option img_class_IMAGE_SIZE is set to 224
+-- User option img_class_LABELS_TXT_FILE is set to /tmp/labels/labels_mobilenet_v2_1.0_224.txt
+-- Generating image files from /tmp/samples
+++ Converting cat.bmp to cat.c
+++ Converting dog.bmp to dog.c
+-- Skipping file /tmp/samples/files.md due to unsupported image format.
+++ Converting kimono.bmp to kimono.c
+++ Converting tiger.bmp to tiger.c
+++ Generating /tmp/build/generated/img_class/samples/sample_files.h
+-- Generating labels file from /tmp/labels/labels_mobilenet_v2_1.0_224.txt
+-- writing to /tmp/build/generated/img_class/include/Labels.hpp and /tmp/build/generated/img_class/src/Labels.cc
+-- User option img_class_ACTIVATION_BUF_SZ is set to 0x00200000
+-- User option img_class_MODEL_PATH is set to /tmp/models/mobilenet_v2_1.0_224_INT8.tflite
+-- Using /tmp/models/mobilenet_v2_1.0_224_INT8.tflite
+++ Converting mobilenet_v2_1.0_224_INT8.tflite to    mobilenet_v2_1.0_224_INT8.tflite.cc
+...
+```
+
+In particular, the building options pointing to the input files `<use_case>_FILE_PATH`, the model
+`<use_case>_MODEL_PATH`, and labels text file `<use_case>_LABELS_TXT_FILE` are used by Python scripts in order to
+generate not only the converted array files, but also some headers with utility functions.
+
+> **Note**: The utility functions generated for `labels` and the `tflite` files are used directly at application level.
+> The sample images and audio, however, are linked to HAL camera and audio component interfaces. There is no restriction
+> on direct use of the generated functions, we have chosen to wire it via HAL to make it easier to understand the flow
+> if we were using a real peripheral device streaming (or strobing) data.
+
+For example, the generated utility functions for image classification are:
+
+- Snippet from `build/generated/img_class/generated/samples/samples_files.h`
+
+    ```C++
+    #ifndef GENERATED_IMAGES_H
+    #define GENERATED_IMAGES_H
+
+    #if defined(__cplusplus)
+    extern "C" {
+    #endif /* defined(__cplusplus) */
+
+    #include <stdint.h>
+
+    #define NUMBER_OF_FILES (4U)   /**< Total number of files data is available for */
+    #define IMAGE_DATA_SIZE (150528U)     /**< Size (bytes) for each image */
+    #define IMAGE_DATA_W    (224)     /**< Width of each image in pixels */
+    #define IMAGE_DATA_H    (224)    /**< Height of each image pixels */
+
+    extern const uint8_t im0[IMAGE_DATA_SIZE];
+    extern const uint8_t im1[IMAGE_DATA_SIZE];
+    extern const uint8_t im2[IMAGE_DATA_SIZE];
+    extern const uint8_t im3[IMAGE_DATA_SIZE];
+
+    /**
+    * @brief       Gets the filename for the baked-in input array
+    * @param[in]   idx     Index of the input.
+    * @return      const C string pointer to the name.
+    **/
+    const char* get_sample_data_filename(const uint32_t idx);
+
+    /**
+    * @brief       Gets the pointer to image data.
+    * @param[in]   idx     Index of the input.
+    * @return      Pointer to the 8-bit unsigned integer data.
+    **/
+    const uint8_t* get_sample_data_ptr(const uint32_t idx);
+    ```
+
+  - Snippet from `build/generated/img_class/generated/samples/sample_files.c`
+
+      ```C++
+
+      #include "sample_files.h"
+      #include <stddef.h>
+
+      static const char* imgFilenames[] = {
+          "cat.bmp",
+          "dog.bmp",
+          "kimono.bmp",
+          "tiger.bmp",
+      };
+
+      static const uint8_t* imgArrays[] = {
+          im0,
+          im1,
+          im2,
+          im3
+      };
+
+      const char* get_sample_data_filename(const uint32_t idx)
+      {
+        if (idx < NUMBER_OF_FILES) {
+            return imgFilenames[idx];
+        }
+        return NULL;
+      }
+
+      const uint8_t* get_sample_data_ptr(const uint32_t idx)
+      {
+        if (idx < NUMBER_OF_FILES) {
+            return imgArrays[idx];
+        }
+        return NULL;
+      }
+      ```
+
+These are generated using Python templates located in `scripts/py/mlek_tools/gen/templates`.
+
+```tree
+scripts
+└── py
+    ├── requirements.txt
+    └── mlek_tools
+        └── gen
+            ├── <generation scripts>
+            └── templates
+                  ├── header_template.txt
+                  ├── labels
+                  │   ├── Labels.cc.template
+                  │   └── Labels.hpp.template
+                  ├── sample-data
+                  │   ├── audio
+                  │   │   ├── audio_clips.c.template
+                  │   │   ├── audio_clips.h.template
+                  │   │   └── audio.c.template
+                  │   └── images
+                  │       ├── image.c.template
+                  │       ├── images.c.template
+                  │       └── images.h.template
+                  ├── tests
+                  │   ├── iofmdata.cc.template
+                  │   ├── TestData.cc.template
+                  │   └── TestData.hpp.template
+                  └── tflite.cc.template
+```
+
+Based on the type of use-case, the correct conversion is called in the use-case CMake file. Or, audio or image
+respectively, for voice, or vision use-cases.
+
+For example, the generations call for image classification, `source/app/use_case/img_class/usecase.cmake`, looks like:
+
+```c++
+# Generate input files
+generate_images_code("${${use_case}_FILE_PATH}"
+                     ${SAMPLES_GEN_DIR}
+                     "${${use_case}_IMAGE_SIZE}")
+
+# Generate labels file
+set(${use_case}_LABELS_CPP_FILE Labels)
+generate_labels_code(
+    INPUT           "${${use_case}_LABELS_TXT_FILE}"
+    DESTINATION_SRC ${SRC_GEN_DIR}
+    DESTINATION_HDR ${INC_GEN_DIR}
+    OUTPUT_FILENAME "${${use_case}_LABELS_CPP_FILE}"
+)
+
+...
+
+# Generate model file
+generate_model_code(
+    MODEL_PATH ${${use_case}_MODEL_PATH}
+    DESTINATION ${SRC_GEN_DIR}
+    NAMESPACE   "arm" "app" "img_class")
+```
+
+> **Note:** When required, for models and labels conversion, it is possible to add extra parameters such as extra code
+> to put in `<model>.cc` file or namespaces.
+>
+> ```c++
+> set(${use_case}_LABELS_CPP_FILE Labels)
+> generate_labels_code(
+>     INPUT           "${${use_case}_LABELS_TXT_FILE}"
+>     DESTINATION_SRC ${SRC_GEN_DIR}
+>     DESTINATION_HDR ${INC_GEN_DIR}
+>     OUTPUT_FILENAME "${${use_case}_LABELS_CPP_FILE}"
+>     NAMESPACE       "namespace1" "namespace2"
+> )
+>
+> ...
+>
+> set(EXTRA_MODEL_CODE
+>     "/* Model parameters for ${use_case} */"
+>     "extern const int   g_myvariable2     = value1"
+>     "extern const int   g_myvariable2     = value2"
+> )
+>
+> generate_model_code(
+>     MODEL_PATH ${${use_case}_MODEL_PATH}
+>     DESTINATION ${SRC_GEN_DIR}
+>     EXPRESSIONS ${EXTRA_MODEL_CODE}
+>     NAMESPACE   "namespace1" "namespace2"
+> )
+> ```
+
+After the build, the files generated in the build folder are:
+
+```tree
+build/generated/
+├── <use_case_name1>
+│   ├── include
+│   │   └── Labels.hpp
+│   │
+│   ├── samples
+│   │   ├── <uc1_input_file1>.cc
+│   │   ├── <uc1_input_file2>.cc
+│   │   ├── sample_files.c
+│   │   └── sample_files.h
+│   │
+│   └── src
+│       ├── Labels.cc
+│       └── <uc1_model_name>.tflite.cc
+└──  <use_case_name2>
+    ├── include
+    │   ├── InputFiles.hpp
+    │   └── Labels.hpp
+    │
+    ├── samples
+    │   ├── <uc2_input_file1>.cc
+    │   ├── <uc2_input_file2>.cc
+    │   ├── sample_files.c
+    │   └── sample_files.h
+    │
+    └── src
+        ├── Labels.cc
+        └── <uc2_model_name>.tflite.cc
+```
+
+The next section of the documentation details: [Deployment](deployment.md).

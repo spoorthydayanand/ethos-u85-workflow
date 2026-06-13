@@ -1,0 +1,16 @@
+# Desktop Usage {#avh_desktop}
+
+You can use Arm Virtual Hardware FVP models with embedded projects locally on your machine.
+
+## Command Line Interface (CLI) {#desktop_cli}
+
+Section \ref avh_fvp_artifactory explains how to download the Arm FVPs to your local machine. For an overview about
+program execution using CLI see section [Simulation - Using Arm FVPs](../../simulation/html/using.html).
+
+## Use in IDEs {#desktop_ides}
+
+- \subpage run_mdk_vscode explains how to use Arm FVPs in Keil Studio running on a Linux/Windows/MacOs machine.
+- \subpage run_mdk_uv4 explains how to use uVision running on a local Windows PC.
+- **IAR Embedded Workbench for Arm**, **Lauterbach Trace32** and other popular development and debug environments
+  provide support for Arm Fast Model based targets and hence can be used with Arm FVPs as well. Refer to the
+  documentation of corresponding tools for setup details.

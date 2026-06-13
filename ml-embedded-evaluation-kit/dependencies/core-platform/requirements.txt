@@ -1,0 +1,3 @@
+ethos-u-vela
+pyelftools
+tensorflow==2.19.1
